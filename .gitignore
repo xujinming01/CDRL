@@ -219,4 +219,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-!/log
+logs/
+/test.ipynb
+/test.py
+/rl-baselines3-zoo-master
+log/
