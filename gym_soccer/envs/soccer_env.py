@@ -11,10 +11,14 @@ from contextlib import closing
 try:
     import hfo_py
 except ImportError as e:
-    raise error.DependencyNotInstalled("{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].')".format(e))
+    raise error.DependencyNotInstalled(
+        "{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].')".format(
+            e))
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 def find_free_port():
     """Find a random free port. Does not guarantee that the port will still be free after return.
@@ -41,12 +45,14 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         print(self.hfo_path)
         self._configure_environment()
         self.env = hfo_py.HFOEnvironment()
-        self.env.connectToServer(config_dir=hfo_py.get_config_path(), server_port=self.server_port)
-        print("Shape =",self.env.getStateSize())
+        self.env.connectToServer(config_dir=hfo_py.get_config_path(),
+                                 server_port=self.server_port)
+        print("Shape =", self.env.getStateSize())
         self.observation_space = spaces.Box(low=-1, high=1,
-                                            shape=((self.env.getStateSize(),)), dtype=np.float32)
+                                            shape=((self.env.getStateSize(),)),
+                                            dtype=np.float32)
         # Action space omits the Tackle/Catch actions, which are useful on defense
-        low0 = np.array([0, -180], dtype=np.float32) 
+        low0 = np.array([0, -180], dtype=np.float32)
         high0 = np.array([100, 180], dtype=np.float32)
         low1 = np.array([-180], dtype=np.float32)
         high1 = np.array([180], dtype=np.float32)
@@ -55,9 +61,12 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         low3 = np.array([-180], dtype=np.float32)
         high3 = np.array([180], dtype=np.float32)
         self.action_space = spaces.Tuple((spaces.Discrete(3),
-                                          spaces.Box(low=low0, high=high0, dtype=np.float32),
-                                          spaces.Box(low=low1, high=high1, dtype=np.float32),
-                                          spaces.Box(low=low2, high=high2, dtype=np.float32)))
+                                          spaces.Box(low=low0, high=high0,
+                                                     dtype=np.float32),
+                                          spaces.Box(low=low1, high=high1,
+                                                     dtype=np.float32),
+                                          spaces.Box(low=low2, high=high2,
+                                                     dtype=np.float32)))
 
         self.status = hfo_py.IN_GAME
         self._seed = -1
@@ -78,8 +87,8 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         self._start_hfo_server()
 
     def _start_hfo_server(self, frames_per_trial=500,
-                          #untouched_time=1000, 
-                          untouched_time=100, 
+                          # untouched_time=1000,
+                          untouched_time=100,
                           offense_agents=1,
                           defense_agents=0, offense_npcs=0,
                           defense_npcs=0, sync_mode=True, port=None,
@@ -108,33 +117,33 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         if port is None:
             port = find_free_port()
         self.server_port = port
-        '''cmd = self.hfo_path + \
-              " --headless --frames-per-trial %i --untouched-time %i --offense-agents %i"\
-	      " --defense-agents %i --offense-npcs %i --defense-npcs %i"\
-	      " --port %i --offense-on-ball %i --seed %i --ball-x-min %f"\
-	      " --ball-x-max %f --log-dir %s"\
-	      % (frames_per_trial, untouched_time, 
-		 offense_agents,
-		 defense_agents, offense_npcs, defense_npcs, port,
-		 offense_on_ball, seed, ball_x_min, ball_x_max,
-		 log_dir)'''
-        cmd = self.hfo_path + \
-              " --headless --frames-per-trial %i --offense-agents %i"\
-              " --defense-agents %i --offense-npcs %i --defense-npcs %i"\
-              " --port %i --offense-on-ball %i --seed %i --ball-x-min %f"\
-              " --ball-x-max %f --log-dir %s"\
-              % (frames_per_trial,
-                 offense_agents,
-                 defense_agents, offense_npcs, defense_npcs, port,
-                 offense_on_ball, seed, ball_x_min, ball_x_max,
-                 log_dir)
+        '''
+        cmd = self.hfo_path + (
+                " --headless --frames-per-trial %i --untouched-time %i --offense-agents %i"
+                " --defense-agents %i --offense-npcs %i --defense-npcs %i"
+                " --port %i --offense-on-ball %i --seed %i --ball-x-min %f"
+                " --ball-x-max %f --log-dir %s" 
+                % (frames_per_trial, untouched_time, offense_agents, defense_agents, 
+                   offense_npcs, defense_npcs, port, offense_on_ball, 
+                   seed, ball_x_min, ball_x_max, log_dir)
+        )
+        '''
+        cmd = self.hfo_path + (
+                " --headless --frames-per-trial %i --offense-agents %i"
+                " --defense-agents %i --offense-npcs %i --defense-npcs %i"
+                " --port %i --offense-on-ball %i --seed %i --ball-x-min %f"
+                " --ball-x-max %f --log-dir %s"
+                % (frames_per_trial, offense_agents, defense_agents,
+                   offense_npcs, defense_npcs, port, offense_on_ball,
+                   seed, ball_x_min, ball_x_max, log_dir)
+        )
         if not sync_mode: cmd += " --no-sync"
         if fullstate:     cmd += " --fullstate"
         if verbose:       cmd += " --verbose"
         if not log_game:  cmd += " --no-logging"
         print('Starting server with command: %s' % cmd)
         self.server_process = subprocess.Popen(cmd.split(' '), shell=False)
-        time.sleep(10) # Wait for server to startup before connecting a player
+        time.sleep(10)  # Wait for server to startup before connecting a player
 
     def _start_viewer(self):
         """
@@ -142,8 +151,8 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         used with a *.rcg logfile to replay a game. See details at
         https://github.com/LARG/HFO/blob/master/doc/manual.pdf.
         """
-        cmd = hfo_py.get_viewer_path() +\
-              " --connect --port %d" % (self.server_port)
+        cmd = hfo_py.get_viewer_path() + " --connect --port %d" % (
+            self.server_port)
         self.viewer = subprocess.Popen(cmd.split(' '), shell=False)
 
     def _step(self, action):
@@ -195,7 +204,7 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         else:
             if self.viewer is None:
                 self._start_viewer()
- 
+
     def close(self):
         if self.server_process is not None:
             try:
@@ -209,14 +218,14 @@ class ServerDownException(Exception):
     Custom error so agents can catch it and exit cleanly if the server dies unexpectedly.
     """
     pass
-  
+
 
 ACTION_LOOKUP = {
-    0 : hfo_py.DASH,
-    1 : hfo_py.TURN,
-    2 : hfo_py.KICK,
-    3 : hfo_py.TACKLE, # Used on defense to slide tackle the ball
-    4 : hfo_py.CATCH,  # Used only by goalie to catch the ball
+    0: hfo_py.DASH,
+    1: hfo_py.TURN,
+    2: hfo_py.KICK,
+    3: hfo_py.TACKLE,  # Used on defense to slide tackle the ball
+    4: hfo_py.CATCH,  # Used only by goalie to catch the ball
 }
 
 STATUS_LOOKUP = {

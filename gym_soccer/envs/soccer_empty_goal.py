@@ -1,13 +1,19 @@
 import logging
 import math
+
+from gym import error
+
 from gym_soccer.envs.soccer_env import SoccerEnv
 
 try:
     import hfo_py
 except ImportError as e:
-    raise error.DependencyNotInstalled("{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].)'".format(e))
+    raise error.DependencyNotInstalled(
+        "{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].)'".format(
+            e))
 
 logger = logging.getLogger(__name__)
+
 
 class SoccerEmptyGoalEnv(SoccerEnv):
     """
@@ -16,6 +22,7 @@ class SoccerEmptyGoalEnv(SoccerEnv):
     the ball, kicks the ball towards the goal, and scores a goal.
 
     """
+
     def __init__(self):
         super(SoccerEmptyGoalEnv, self).__init__()
         self.old_ball_prox = 0
@@ -46,9 +53,11 @@ class SoccerEmptyGoalEnv(SoccerEnv):
         goal_ang_rad = math.acos(goal_ang_cos_rad)
         if goal_ang_sin_rad < 0:
             goal_ang_rad *= -1.
-        alpha = max(ball_ang_rad, goal_ang_rad) - min(ball_ang_rad, goal_ang_rad)
-        ball_dist_goal = math.sqrt(ball_dist*ball_dist + goal_dist*goal_dist -
-                                   2.*ball_dist*goal_dist*math.cos(alpha))
+        alpha = max(ball_ang_rad, goal_ang_rad) - min(ball_ang_rad,
+                                                      goal_ang_rad)
+        ball_dist_goal = math.sqrt(
+            ball_dist * ball_dist + goal_dist * goal_dist -
+            2. * ball_dist * goal_dist * math.cos(alpha))
         # Compute the difference in ball proximity from the last step
         if not self.first_step:
             ball_prox_delta = ball_proximity - self.old_ball_prox

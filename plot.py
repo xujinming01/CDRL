@@ -1,11 +1,9 @@
 import os
 
-import gym
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.results_plotter import load_results
 
 

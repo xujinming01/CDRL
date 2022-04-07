@@ -4,6 +4,7 @@ from gym_soccer.envs.soccer_score_goal import SoccerScoreGoalEnv
 
 logger = logging.getLogger(__name__)
 
+
 class SoccerAgainstKeeperEnv(SoccerScoreGoalEnv):
     """
     SoccerAgainstKeeper initializes the agent most of the way down the
@@ -14,6 +15,7 @@ class SoccerAgainstKeeperEnv(SoccerScoreGoalEnv):
     given for scoring a goal.
 
     """
+
     def __init__(self):
         super(SoccerAgainstKeeperEnv, self).__init__()
 
