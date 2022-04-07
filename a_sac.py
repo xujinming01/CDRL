@@ -29,7 +29,7 @@ def main():
 
 
 def learn(log_dir):
-    # Save log to log_dir/monitor.csv
+    # Save log to *.monitor.csv
     env = Monitor(gym.make('Platform-v0'), log_dir)
     env = DummyVecEnv([lambda: env])  # SAC only support VecEnv
 
