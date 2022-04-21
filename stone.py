@@ -1,11 +1,14 @@
-"""Directly outputting discrete actions."""
+"""Directly outputting discrete actions.
+Output weight of each discrete action, then choose action with max weight.
+Based on https://arxiv.org/abs/1511.04143 - DRL in parameterized action space.
+"""
 
 import os
 import time
 
 import fire
 import gym
-from stable_baselines3 import DDPG, SAC
+from stable_baselines3 import DDPG, PPO, SAC
 from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
@@ -19,10 +22,11 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 import gym_platform
 
 ALGORITHMS = {"ddpg": DDPG,
+              "ppo": PPO,
               "sac": SAC}
 
 
-def run(algo: str = "ddpg",
+def run(algo: str = "sac",
         n_runs: int = 5,
         max_timesteps: int = 2_000_000,
         max_episodes: int = 80_000,
@@ -41,6 +45,7 @@ def run(algo: str = "ddpg",
 
 def learn_single_run(log_dir, algo, max_timesteps, max_episodes,
                      n_eval_episodes, eval_freq):
+    """Set parameters for a single training."""
     # Save log to *.monitor.csv
     env = Monitor(gym.make('Platform-v0'), log_dir)
     env = DummyVecEnv([lambda: env])

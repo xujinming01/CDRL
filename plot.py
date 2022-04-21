@@ -6,19 +6,20 @@ import seaborn as sns
 
 from stable_baselines3.common.results_plotter import load_results
 
+LOG_DIRECTORY = f"log/sac_stone/platform"  # Make sure of using right path
+
 
 def main():
     sns.set()
 
-    log_dir = "log/"
-    results = load_results(log_dir)  # load all log files to one DataFrame
+    results = load_results(LOG_DIRECTORY)  # load all log files to one DataFrame
 
     # Count the number of all *.monitor.csv files.
     n_runs = 0
-    log_suffix = "monitor.csv"
-    for file in os.listdir(log_dir):
-        if file[-len(log_suffix):] == log_suffix:
-            n_runs += 1
+    for root, dirs, files in os.walk(LOG_DIRECTORY):
+        for file in files:
+            if file.endswith("monitor.csv"):
+                n_runs += 1
 
     # smooth the values
     len_episodes = len(results) / n_runs
@@ -36,10 +37,13 @@ def main():
     ax = sns.lineplot(x=episodes, y=smoothed_values, ci="sd")
     plt.xlabel("Episodes")
     plt.ylabel("Rewards")
-    plt.title("Platform")
+    # plt.title("Platform")
     # ax.set_xlim(0, 80000)
     # ax.set_ylim(0, 1)
-    # plt.savefig(f"1e8.png")
+
+    # Don't put '/' after LOG_DIRECTORY to save in correct path.
+    plt.savefig(f"{LOG_DIRECTORY}.svg")  # vector graph
+    plt.savefig(f"{LOG_DIRECTORY}.png", dpi=1000)  # bitmap
     plt.show()
 
 
