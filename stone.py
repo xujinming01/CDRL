@@ -1,7 +1,7 @@
 """Directly outputting discrete actions.
 Output weight of each discrete action, then choose action with max weight.
-Based on https://arxiv.org/abs/1511.04143 - DRL in parameterized action space.
-"""
+Based on https://arxiv.org/abs/1511.04143
+Hausknecht M, Stone P. Deep reinforcement learning in parameterized action space[J]. 2015."""
 
 import os
 import time
@@ -17,37 +17,41 @@ from stable_baselines3.common.logger import make_output_format
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-# import gym_soccer
-# import gym_goal
+import gym_soccer
+import gym_goal
 import gym_platform
 
 ALGORITHMS = {"ddpg": DDPG,
               "ppo": PPO,
               "sac": SAC}
+ENVIRONMENTS = {"goal": "Goal-v0",
+                "platform": "Platform-v0"}
 
 
 def run(algo: str = "sac",
+        env: str = "goal",
         n_runs: int = 5,
         max_timesteps: int = 2_000_000,
         max_episodes: int = 80_000,
         n_eval_episodes: int = 100,
         eval_freq: int = 20_000,
         ):
-    logs_dir = f"log/{algo}_stone/platform/"  # Make sure of using right path
+    logs_dir = f"log/{algo}_stone/{env}"  # Make sure of using right path
     algo = ALGORITHMS[algo]
-    os.makedirs(logs_dir, exist_ok=True)
+    env = ENVIRONMENTS[env]
 
     for i in range(n_runs):
-        log_dir = logs_dir + f"{i}"
-        learn_single_run(log_dir, algo, max_timesteps, max_episodes,
+        log_dir = os.path.join(logs_dir, f"{i}")
+        os.makedirs(log_dir, exist_ok=True)
+        learn_single_run(log_dir, algo, env, max_timesteps, max_episodes,
                          n_eval_episodes, eval_freq)
 
 
-def learn_single_run(log_dir, algo, max_timesteps, max_episodes,
+def learn_single_run(log_dir, algo, env, max_timesteps, max_episodes,
                      n_eval_episodes, eval_freq):
     """Set parameters for a single training."""
-    # Save log to *.monitor.csv
-    env = Monitor(gym.make('Platform-v0'), log_dir)
+    env_eval = gym.make(env)  # Separate evaluation env
+    env = Monitor(gym.make(env), log_dir)  # Save log to *.monitor.csv
     env = DummyVecEnv([lambda: env])
 
     model = algo(
@@ -59,7 +63,8 @@ def learn_single_run(log_dir, algo, max_timesteps, max_episodes,
         # batch_size=256,
         # verbose=1,
         # action_noise=action_noise,
-        # tensorboard_log="tensorboard_outputs/"
+        # tensorboard_log="tensorboard_outputs/",
+        # device="cpu",
     )
 
     # set up logger
@@ -68,7 +73,6 @@ def learn_single_run(log_dir, algo, max_timesteps, max_episodes,
     model.set_logger(logger)
 
     callback_max_episodes = StopTrainingOnMaxEpisodes(max_episodes, verbose=1)
-    env_eval = gym.make('Platform-v0')  # Separate evaluation env
     callback_eval = EvalCallback(env_eval,
                                  best_model_save_path=log_dir,
                                  log_path=log_dir,
@@ -79,9 +83,9 @@ def learn_single_run(log_dir, algo, max_timesteps, max_episodes,
     start = time.time()  # Time the training
     model.learn(
         total_timesteps=max_timesteps,
-        callback=callback
+        callback=callback,
     )
-    print(f"\tTraining time in seconds: {int(time.time() - start)}")
+    print(f"Training time in seconds: {int(time.time() - start)}")
 
 
 if __name__ == '__main__':

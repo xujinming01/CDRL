@@ -78,14 +78,33 @@ class GoalEnv(gym.Env):
         self.time = 0
         self.max_time = 100
 
+        # SB3 only support continuous action space
+        # first three are discrete actions, KICK_TO, SHOOT_GOAL_LEFT, SHOOT_GOAL_RIGHT
+        # KICK_TO: (x, y), x in (0, 40), y in (-15, 15)
+        # SHOOT_GOAL_LEFT: y, y in (-7.01, 7.01)
+        # SHOOT_GOAL_RIGHT: y, y in (-7.01, 7.01)
+        self.action_space = gym.spaces.Box(
+            low=np.array([0, 0, 0, 0, -15, -7.01, -7.01]),
+            high=np.array([1, 1, 1, 40, 15, 7.01, 7.01]),
+            shape=np.array([7, ]),
+            dtype=np.float32
+        )
+        # convert to Dict since SB3 do not support Tuple
+        self.observation_keys = ["obs_state", "obs_steps"]
+        self.observation_space = spaces.Dict({
+            self.observation_keys[0]: spaces.Box(low=LOW_VECTOR, high=HIGH_VECTOR, dtype=np.float32),
+            self.observation_keys[1]: spaces.Discrete(200),
+        })
+
+        # below is original action and observation_space
         num_actions = len(ACTION_LOOKUP)
-        self.action_space = spaces.Tuple((
+        self.origin_action_space = spaces.Tuple((
             spaces.Discrete(num_actions),  # actions
             spaces.Tuple(  # parameters
                 tuple(spaces.Box(PARAMETERS_MIN[i], PARAMETERS_MAX[i], dtype=np.float32) for i in range(num_actions))
             )
         ))
-        self.observation_space = spaces.Tuple((
+        self.origin_observation_space = spaces.Tuple((
             # spaces.Box(low=0., high=1., shape=self.get_state().shape, dtype=np.float32),  # scaled states
             spaces.Box(low=LOW_VECTOR, high=HIGH_VECTOR, dtype=np.float32),  # unscaled states
             spaces.Discrete(200),  # internal time steps (200 limit is an estimate)
@@ -109,9 +128,19 @@ class GoalEnv(gym.Env):
             terminal (bool) :
             info (dict) :
         """
-        act_index = action[0]
+        # below are original code
+        # act_index = action[0]
+        # act = ACTION_LOOKUP[act_index]
+        # param = action[1][act_index]
+        # param = np.clip(param, PARAMETERS_MIN[act_index], PARAMETERS_MAX[act_index])
+
+        # choose the max value of three discrete actions
+        act_index = list(action).index(np.max(action[:3]))
         act = ACTION_LOOKUP[act_index]
-        param = action[1][act_index]
+        if act == KICK_TO:  # KICK_TO has two parameters
+            param = action[(act_index + 3):(act_index + 4)]
+        else:
+            param = action[act_index + 4]
         param = np.clip(param, PARAMETERS_MIN[act_index], PARAMETERS_MAX[act_index])
 
         steps = 0
@@ -120,13 +149,17 @@ class GoalEnv(gym.Env):
             reward = -self.ball.goal_distance()
             end_episode = True
             state = self.get_state()
-            return (state, 0), reward, end_episode, {}
+            obs = {self.observation_keys[0]: state,
+                   self.observation_keys[1]: 0}  # observation need to be Dict
+            return obs, reward, end_episode, {}
         end_episode = False
         run = True
         reward = 0.
         while run:
             steps += 1
             reward, end_episode = self._update(act, param)
+            if steps == 199:  # add a limit for steps since 'obs_steps' is Discrete(200)
+                end_episode = True
             run = not end_episode
             if run:
                 run = not self.player.can_kick(self.ball)
@@ -142,7 +175,9 @@ class GoalEnv(gym.Env):
                 else:
                     run = False
         state = self.get_state()
-        return (state, steps), reward, end_episode, {}
+        obs = {self.observation_keys[0]: state,
+               self.observation_keys[1]: steps}  # observation need to be Dict
+        return obs, reward, end_episode, {}
 
     def _update(self, act, param):
         """
@@ -196,7 +231,9 @@ class GoalEnv(gym.Env):
             self.ball.position.copy()])
         self.render_states.append(self.states[-1])
 
-        return self.get_state(), 0
+        obs = {self.observation_keys[0]: self.get_state(),
+               self.observation_keys[1]: 0}  # observation need to be Dict
+        return obs
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)

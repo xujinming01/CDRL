@@ -122,7 +122,7 @@ class PlatformEnv(gym.Env):
         self.render_states = []  # record internal states for playback, cleared on reset()
 
         # SB3 only support continuous action space, Tuple(2, 3) -> Box(6, )
-        # first three are discrete actions, other three are parameters
+        # first three are discrete actions, RUN, LEAP, HOP, others are corresponding parameters
         self.action_space = gym.spaces.Box(
             low=np.array([0, 0, 0, 0, 0, 0]),
             high=np.array([1, 1, 1, 30, 720, 430]),
@@ -241,15 +241,17 @@ class PlatformEnv(gym.Env):
 
         terminal = False
         running = True
+
+        # below are original code
         # act_index = action[0]
         # act = ACTION_LOOKUP[act_index]
+        # param = np.clip(param, Constants.PARAMETERS_MIN[act_index], Constants.PARAMETERS_MAX[act_index])
+
         # Bester output the discrete action directly.
         # for SB3, need to choose the max value of different discrete actions.
         act_index = list(action).index(np.max(action[:3]))
         act = ACTION_LOOKUP[act_index]
         param = action[act_index + 3]
-        # print(action)
-        # print(act,param)
         param = np.clip(param, Constants.PARAMETERS_MIN[act_index], Constants.PARAMETERS_MAX[act_index])
 
         steps = 0
