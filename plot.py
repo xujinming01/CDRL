@@ -10,10 +10,13 @@ from stable_baselines3.common.monitor import get_monitor_files
 from stable_baselines3.common.monitor import LoadMonitorResultsError
 
 
-def plotter(logs_dir: str = f"tmp/sac_stone/goal"):  # Make sure of using right path
+def plotter(algo: str = "sac",
+            env: str = "goal"):
     sns.set()
 
+    logs_dir = f"log/{algo}_stone/{env}/"  # Make sure of using right path
     results, n_runs = load_results(logs_dir)  # load all log files to one DataFrame
+
     # smooth the values
     len_episodes = len(results) / n_runs
     smoothed_values = np.array([])
@@ -27,6 +30,7 @@ def plotter(logs_dir: str = f"tmp/sac_stone/goal"):  # Make sure of using right 
     # set x axis
     episodes = list(np.arange(len_episodes)) * n_runs
 
+    # plot the curve
     ax = sns.lineplot(x=episodes, y=smoothed_values, ci="sd")
     plt.xlabel("Episodes")
     plt.ylabel("Rewards")
@@ -64,13 +68,12 @@ def load_results(path: str):
     """
     n_runs = 0
     monitor_files = []
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(path):  # load data and count files
         monitor_file = get_monitor_files(root)
         if monitor_file:
             monitor_files.append(monitor_file[0])
             n_runs += 1
 
-    # monitor_files = get_monitor_files(path)
     if len(monitor_files) == 0:
         raise LoadMonitorResultsError(f"No monitor files of the form *monitor.csv found in {path}")
     data_frames, headers = [], []

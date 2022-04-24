@@ -2,20 +2,19 @@ import os
 
 import gym
 import numpy as np
-from stable_baselines3 import DDPG, PPO, SAC
 from stable_baselines3.common.evaluation import evaluate_policy
 
 import gym_platform
+import gym_goal
+import gym_soccer
+from config import ALGORITHMS, ENVIRONMENTS
 
-ALGORITHMS = {"ddpg": DDPG,
-              "ppo": PPO,
-              "sac": SAC}
 
-
-def main(algo: str = 'ddpg'):
-    log_dir = f"log/{algo}_stone/platform/"  # Make sure of using right path
+def main(algo: str = 'ddpg',
+         env: str = 'goal'):
+    log_dir = f"log/{algo}_stone/{env}/"  # Make sure of using right path
     algo = ALGORITHMS[algo]
-    eval_env = gym.make("Platform-v0")
+    eval_env = gym.make(ENVIRONMENTS[env])
     evaluate(log_dir, algo, eval_env)
 
 

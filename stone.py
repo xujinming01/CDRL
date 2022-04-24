@@ -8,7 +8,6 @@ import time
 
 import fire
 import gym
-from stable_baselines3 import DDPG, PPO, SAC
 from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.callbacks import StopTrainingOnMaxEpisodes
@@ -20,12 +19,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 import gym_soccer
 import gym_goal
 import gym_platform
-
-ALGORITHMS = {"ddpg": DDPG,
-              "ppo": PPO,
-              "sac": SAC}
-ENVIRONMENTS = {"goal": "Goal-v0",
-                "platform": "Platform-v0"}
+from config import ALGORITHMS, ENVIRONMENTS
 
 
 def run(algo: str = "sac",
@@ -34,8 +28,7 @@ def run(algo: str = "sac",
         max_timesteps: int = 2_000_000,
         max_episodes: int = 80_000,
         n_eval_episodes: int = 100,
-        eval_freq: int = 20_000,
-        ):
+        eval_freq: int = 20_000):
     logs_dir = f"log/{algo}_stone/{env}"  # Make sure of using right path
     algo = ALGORITHMS[algo]
     env = ENVIRONMENTS[env]
@@ -81,10 +74,7 @@ def learn_single_run(log_dir, algo, env, max_timesteps, max_episodes,
     callback = CallbackList([callback_max_episodes, callback_eval])
 
     start = time.time()  # Time the training
-    model.learn(
-        total_timesteps=max_timesteps,
-        callback=callback,
-    )
+    model.learn(total_timesteps=max_timesteps, callback=callback)
     print(f"Training time in seconds: {int(time.time() - start)}")
 
 
