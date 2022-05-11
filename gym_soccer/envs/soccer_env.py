@@ -11,9 +11,7 @@ from contextlib import closing
 try:
     import hfo_py
 except ImportError as e:
-    raise error.DependencyNotInstalled(
-        "{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].')".format(
-            e))
+    raise error.DependencyNotInstalled("{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].')".format(e))
 
 import logging
 
@@ -48,9 +46,10 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         self.env.connectToServer(config_dir=hfo_py.get_config_path(),
                                  server_port=self.server_port)
         print("Shape =", self.env.getStateSize())
+
         self.observation_space = spaces.Box(low=-1, high=1,
-                                            shape=((self.env.getStateSize(),)),
-                                            dtype=np.float32)
+                                            shape=(self.env.getStateSize(),))
+
         # Action space omits the Tackle/Catch actions, which are useful on defense
         low0 = np.array([0, -180], dtype=np.float32)
         high0 = np.array([100, 180], dtype=np.float32)
@@ -60,13 +59,25 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         high2 = np.array([100, 180], dtype=np.float32)
         low3 = np.array([-180], dtype=np.float32)
         high3 = np.array([180], dtype=np.float32)
-        self.action_space = spaces.Tuple((spaces.Discrete(3),
-                                          spaces.Box(low=low0, high=high0,
-                                                     dtype=np.float32),
-                                          spaces.Box(low=low1, high=high1,
-                                                     dtype=np.float32),
-                                          spaces.Box(low=low2, high=high2,
-                                                     dtype=np.float32)))
+
+        # SB3.SAC only support continuous action space, Tuple(2, 3) -> Box(6, )
+        # first three are discrete actions, others are corresponding parameters
+        # three discrete actions have 2, 1, 2 continuous parameters respectively
+        # TODO(Jinming): What are the three discrete actions?
+        self.action_space = gym.spaces.Box(
+            low=np.array([0, 0, 0, low0[0], low0[1], low1[0], low2[0], low2[1]]),
+            high=np.array([1, 1, 1, high0[0], high0[1], high1[0], high2[0], high2[1]]),
+            shape=np.array([8, ]),
+        )
+
+        # below is original action space
+        # self.action_space = spaces.Tuple((spaces.Discrete(3),
+        #                                   spaces.Box(low=low0, high=high0,
+        #                                              dtype=np.float32),
+        #                                   spaces.Box(low=low1, high=high1,
+        #                                              dtype=np.float32),
+        #                                   spaces.Box(low=low2, high=high2,
+        #                                              dtype=np.float32)))
 
         self.status = hfo_py.IN_GAME
         self._seed = -1
@@ -155,7 +166,7 @@ class SoccerEnv(gym.Env, utils.EzPickle):
             self.server_port)
         self.viewer = subprocess.Popen(cmd.split(' '), shell=False)
 
-    def _step(self, action):
+    def step(self, action):  # TODO(Jinming): Why Bester didn't go wrong with `_step` & `_reset`?
         self._take_action(action)
         self.status = self.env.step()
         reward = self._get_reward()
@@ -165,16 +176,32 @@ class SoccerEnv(gym.Env, utils.EzPickle):
 
     def _take_action(self, action):
         """ Converts the action space into an HFO action. """
-        action_type = ACTION_LOOKUP[action[0]]
+
+        # Stone output the discrete action directly by weights.
+        # i.e. to choose the max value of different discrete actions.
+        act_index = list(action).index(np.max(action[:3]))
+        action_type = ACTION_LOOKUP[act_index]
         if action_type == hfo_py.DASH:
-            self.env.act(action_type, action[1], action[2])
+            self.env.act(action_type, action[3], action[4])
         elif action_type == hfo_py.TURN:
-            self.env.act(action_type, action[3])
+            self.env.act(action_type, action[5])
         elif action_type == hfo_py.KICK:
-            self.env.act(action_type, action[4], action[5])
+            self.env.act(action_type, action[6], action[7])
         else:
             print('Unrecognized action %d' % action_type)
             self.env.act(hfo_py.NOOP)
+
+        # below is origin code
+        # action_type = ACTION_LOOKUP[action[0]]
+        # if action_type == hfo_py.DASH:
+        #     self.env.act(action_type, action[1], action[2])
+        # elif action_type == hfo_py.TURN:
+        #     self.env.act(action_type, action[3])
+        # elif action_type == hfo_py.KICK:
+        #     self.env.act(action_type, action[4], action[5])
+        # else:
+        #     print('Unrecognized action %d' % action_type)
+        #     self.env.act(hfo_py.NOOP)
 
     def _get_reward(self):
         """ Reward is given for scoring a goal. """
@@ -183,7 +210,7 @@ class SoccerEnv(gym.Env, utils.EzPickle):
         else:
             return 0
 
-    def _reset(self):
+    def reset(self):  # remove the origin `_` prefix.
         """ Repeats NO-OP action until a new episode begins. """
         while self.status == hfo_py.IN_GAME:
             self.env.act(hfo_py.NOOP)

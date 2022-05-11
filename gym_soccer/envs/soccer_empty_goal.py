@@ -82,10 +82,10 @@ class SoccerEmptyGoalEnv(SoccerEnv):
         self.first_step = False
         return reward
 
-    def _reset(self):
+    def reset(self):
         self.old_ball_prox = 0
         self.old_kickable = 0
         self.old_ball_dist_goal = 0
         self.got_kickable_reward = False
         self.first_step = True
-        return super(SoccerEmptyGoalEnv, self)._reset()
+        return super(SoccerEmptyGoalEnv, self).reset()

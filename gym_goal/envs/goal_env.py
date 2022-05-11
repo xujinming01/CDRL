@@ -78,37 +78,32 @@ class GoalEnv(gym.Env):
         self.time = 0
         self.max_time = 100
 
-        # SB3 only support continuous action space
+        # SB3.SAC only support continuous action space
         # first three are discrete actions, KICK_TO, SHOOT_GOAL_LEFT, SHOOT_GOAL_RIGHT
         # KICK_TO: (x, y), x in (0, 40), y in (-15, 15)
         # SHOOT_GOAL_LEFT: y, y in (-7.01, 7.01)
         # SHOOT_GOAL_RIGHT: y, y in (-7.01, 7.01)
         self.action_space = gym.spaces.Box(
-            low=np.array([0, 0, 0, 0, -15, -7.01, -7.01]),
-            high=np.array([1, 1, 1, 40, 15, 7.01, 7.01]),
+            low=np.array([0, 0, 0, 0, -15, -7.01, -7.01], dtype=np.float32),
+            high=np.array([1, 1, 1, 40, 15, 7.01, 7.01], dtype=np.float32),
             shape=np.array([7, ]),
-            dtype=np.float32
         )
-        # convert to Dict since SB3 do not support Tuple
-        self.observation_keys = ["obs_state", "obs_steps"]
-        self.observation_space = spaces.Dict({
-            self.observation_keys[0]: spaces.Box(low=LOW_VECTOR, high=HIGH_VECTOR, dtype=np.float32),
-            self.observation_keys[1]: spaces.Discrete(200),
-        })
+        # observation is state info
+        self.observation_space = spaces.Box(low=np.float32(LOW_VECTOR), high=np.float32(HIGH_VECTOR))
 
         # below is original action and observation_space
-        num_actions = len(ACTION_LOOKUP)
-        self.origin_action_space = spaces.Tuple((
-            spaces.Discrete(num_actions),  # actions
-            spaces.Tuple(  # parameters
-                tuple(spaces.Box(PARAMETERS_MIN[i], PARAMETERS_MAX[i], dtype=np.float32) for i in range(num_actions))
-            )
-        ))
-        self.origin_observation_space = spaces.Tuple((
-            # spaces.Box(low=0., high=1., shape=self.get_state().shape, dtype=np.float32),  # scaled states
-            spaces.Box(low=LOW_VECTOR, high=HIGH_VECTOR, dtype=np.float32),  # unscaled states
-            spaces.Discrete(200),  # internal time steps (200 limit is an estimate)
-        ))
+        # num_actions = len(ACTION_LOOKUP)
+        # self.action_space = spaces.Tuple((
+        #     spaces.Discrete(num_actions),  # actions
+        #     spaces.Tuple(  # parameters
+        #         tuple(spaces.Box(PARAMETERS_MIN[i], PARAMETERS_MAX[i], dtype=np.float32) for i in range(num_actions))
+        #     )
+        # ))
+        # self.observation_space = spaces.Tuple((
+        #     # spaces.Box(low=0., high=1., shape=self.get_state().shape, dtype=np.float32),  # scaled states
+        #     spaces.Box(low=LOW_VECTOR, high=HIGH_VECTOR, dtype=np.float32),  # unscaled states
+        #     spaces.Discrete(200),  # internal time steps (200 limit is an estimate)
+        # ))
 
         self.seed()
 
@@ -149,9 +144,7 @@ class GoalEnv(gym.Env):
             reward = -self.ball.goal_distance()
             end_episode = True
             state = self.get_state()
-            obs = {self.observation_keys[0]: state,
-                   self.observation_keys[1]: 0}  # observation need to be Dict
-            return obs, reward, end_episode, {}
+            return state, reward, end_episode, {}
         end_episode = False
         run = True
         reward = 0.
@@ -175,9 +168,7 @@ class GoalEnv(gym.Env):
                 else:
                     run = False
         state = self.get_state()
-        obs = {self.observation_keys[0]: state,
-               self.observation_keys[1]: steps}  # observation need to be Dict
-        return obs, reward, end_episode, {}
+        return state, reward, end_episode, {}
 
     def _update(self, act, param):
         """
@@ -231,9 +222,7 @@ class GoalEnv(gym.Env):
             self.ball.position.copy()])
         self.render_states.append(self.states[-1])
 
-        obs = {self.observation_keys[0]: self.get_state(),
-               self.observation_keys[1]: 0}  # observation need to be Dict
-        return obs
+        return self.get_state()
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)

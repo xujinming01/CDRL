@@ -29,23 +29,23 @@ class SoccerScoreGoalEnv(SoccerEmptyGoalEnv):
 
     def __init__(self):
         super(SoccerScoreGoalEnv, self).__init__()
-        # dash, turn, kick, tackle
-        low0 = np.array([0, -180],
-                        dtype=np.float32)  # meant to be 0, not -100! (according to original soccer env and dqn-hfo inverting gradients)
-        high0 = np.array([100, 180], dtype=np.float32)
-        low1 = np.array([-180], dtype=np.float32)
-        high1 = np.array([180], dtype=np.float32)
-        low2 = np.array([0, -180], dtype=np.float32)
-        high2 = np.array([100, 180], dtype=np.float32)
-        low3 = np.array([-180], dtype=np.float32)
-        high3 = np.array([180], dtype=np.float32)
-        self.action_space = spaces.Tuple((
-            spaces.Discrete(3),
-            spaces.Box(low=low0, high=high0, dtype=np.float32),
-            spaces.Box(low=low1, high=high1, dtype=np.float32),
-            spaces.Box(low=low2, high=high2, dtype=np.float32),
-            # spaces.Box(low=low3, high=high3),
-        ))
+        # # dash, turn, kick, tackle
+        # low0 = np.array([0, -180],
+        #                 dtype=np.float32)  # meant to be 0, not -100! (according to original soccer env and dqn-hfo inverting gradients)
+        # high0 = np.array([100, 180], dtype=np.float32)
+        # low1 = np.array([-180], dtype=np.float32)
+        # high1 = np.array([180], dtype=np.float32)
+        # low2 = np.array([0, -180], dtype=np.float32)
+        # high2 = np.array([100, 180], dtype=np.float32)
+        # low3 = np.array([-180], dtype=np.float32)
+        # high3 = np.array([180], dtype=np.float32)
+        # self.action_space = spaces.Tuple((
+        #     spaces.Discrete(3),
+        #     spaces.Box(low=low0, high=high0, dtype=np.float32),
+        #     spaces.Box(low=low1, high=high1, dtype=np.float32),
+        #     spaces.Box(low=low2, high=high2, dtype=np.float32),
+        #     # spaces.Box(low=low3, high=high3),
+        # ))
 
         self.unum = self.env.getUnum()  # uniform number (identifier) of our lone agent
         print("UNUM =", self.unum)

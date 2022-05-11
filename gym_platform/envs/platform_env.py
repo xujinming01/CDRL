@@ -121,36 +121,30 @@ class PlatformEnv(gym.Env):
         self.states = []
         self.render_states = []  # record internal states for playback, cleared on reset()
 
-        # SB3 only support continuous action space, Tuple(2, 3) -> Box(6, )
+        # SB3.SAC only support continuous action space, Tuple(2, 3) -> Box(6, )
         # first three are discrete actions, RUN, LEAP, HOP, others are corresponding parameters
         self.action_space = gym.spaces.Box(
-            low=np.array([0, 0, 0, 0, 0, 0]),
-            high=np.array([1, 1, 1, 30, 720, 430]),
+            low=np.array([0, 0, 0, 0, 0, 0], dtype=np.float32),
+            high=np.array([1, 1, 1, 30, 720, 430], dtype=np.float32),
             shape=np.array([6, ]),
-            dtype=np.float32
         )
-        # convert to Dict since SB3 do not support Tuple
-        # TODO(Jinming): figure out the meaning of keys
-        self.observation_keys = ["obs_state", "obs_steps"]
-        self.observation_space = spaces.Dict({
-            self.observation_keys[0]: spaces.Box(0., 1., shape=self.get_state().shape),
-            self.observation_keys[1]: spaces.Discrete(200)
-        })
+        # observation is state info
+        self.observation_space = spaces.Box(np.float32(0), np.float32(1), shape=self.get_state().shape)
 
         # below is original action and observation_space
-        num_actions = 3
-        self.origin_action_space = spaces.Tuple((
-            spaces.Discrete(num_actions),  # actions
-            # spaces.Box(Constants.PARAMETERS_MIN, Constants.PARAMETERS_MAX, dtype=np.float32),  # parameters
-            spaces.Tuple(  # parameters
-                tuple(spaces.Box(low=np.array([Constants.PARAMETERS_MIN[i]]), high=np.array([Constants.PARAMETERS_MAX[i]]), dtype=np.float32)
-                      for i in range(num_actions))
-            )
-        ))
-        self.origin_observation_space = spaces.Tuple((
-            spaces.Box(low=0., high=1., shape=self.get_state().shape, dtype=np.float32),
-            spaces.Discrete(200),  # steps (200 limit is an estimate)
-        ))
+        # num_actions = 3
+        # self.action_space = spaces.Tuple((
+        #     spaces.Discrete(num_actions),  # actions
+        #     # spaces.Box(Constants.PARAMETERS_MIN, Constants.PARAMETERS_MAX, dtype=np.float32),  # parameters
+        #     spaces.Tuple(  # parameters
+        #         tuple(spaces.Box(low=np.array([Constants.PARAMETERS_MIN[i]]), high=np.array([Constants.PARAMETERS_MAX[i]]), dtype=np.float32)
+        #               for i in range(num_actions))
+        #     )
+        # ))
+        # self.observation_space = spaces.Tuple((
+        #     spaces.Box(low=0., high=1., shape=self.get_state().shape, dtype=np.float32),
+        #     spaces.Discrete(200),  # steps (200 limit is an estimate)
+        # ))
 
         self.window = None
 
@@ -247,8 +241,8 @@ class PlatformEnv(gym.Env):
         # act = ACTION_LOOKUP[act_index]
         # param = np.clip(param, Constants.PARAMETERS_MIN[act_index], Constants.PARAMETERS_MAX[act_index])
 
-        # Bester output the discrete action directly.
-        # for SB3, need to choose the max value of different discrete actions.
+        # Stone output the discrete action directly.
+        # i.e. to choose the max value of different discrete actions.
         act_index = list(action).index(np.max(action[:3]))
         act = ACTION_LOOKUP[act_index]
         param = action[act_index + 3]
@@ -275,8 +269,7 @@ class PlatformEnv(gym.Env):
 
         state = self.get_state()
         # obs = (state, steps)  # Tuple not supported
-        obs = {self.observation_keys[0]: state,
-               self.observation_keys[1]: steps}
+        obs = state
         return obs, reward, terminal, {}
 
     def reset(self):
@@ -287,9 +280,7 @@ class PlatformEnv(gym.Env):
         self.states = []
         self.render_states = []
 
-        obs = {self.observation_keys[0]: self.get_state(),
-               self.observation_keys[1]: 0}
-        return obs
+        return self.get_state()
 
     def _on_platforms(self):
         """ Checks if the player is on any of the platforms. """
