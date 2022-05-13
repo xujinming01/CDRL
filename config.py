@@ -1,9 +1,11 @@
 """This file contains some constant configurations"""
 
-from stable_baselines3 import DDPG, PPO, SAC
+from stone import DDPGStone, SACStone, PPOStone
 
-ALGORITHMS = {"ddpg": DDPG,
-              "ppo": PPO,
-              "sac": SAC}
 ENVIRONMENTS = {"goal": "Goal-v0",
-                "platform": "Platform-v0"}
+                "platform": "Platform-v0",
+                "hfo": "SoccerScoreGoal-v0"}
+
+ALGORITHMS = {"ddpg": DDPGStone,
+              "ppo": PPOStone,
+              "sac": SACStone,}

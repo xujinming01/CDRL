@@ -10,11 +10,12 @@ from stable_baselines3.common.monitor import get_monitor_files
 from stable_baselines3.common.monitor import LoadMonitorResultsError
 
 
-def plotter(algo: str = "sac",
-            env: str = "goal"):
+def plotter(algo: str = "ddpg",
+            env: str = "platform"):
     sns.set()
 
-    logs_dir = f"log/{algo}_stone/{env}/"  # Make sure of using right path
+    # logs_dir = f"log/{algo}_stone/{env}"  # Make sure of using right path
+    logs_dir = f"log/{env}/{algo}_stone"
     results, n_runs = load_results(logs_dir)  # load all log files to one DataFrame
 
     # smooth the values
@@ -39,7 +40,7 @@ def plotter(algo: str = "sac",
     # ax.set_ylim(0, 1)
 
     # Don't put '/' after LOG_DIRECTORY to save in correct path.
-    plt.savefig(f"{logs_dir}.svg")  # vector graph
+    plt.savefig(f"{logs_dir}.pdf")  # vector graph
     plt.savefig(f"{logs_dir}.png", dpi=1000)  # bitmap
     plt.show()
 
