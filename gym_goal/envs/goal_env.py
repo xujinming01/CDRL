@@ -151,8 +151,8 @@ class GoalEnv(gym.Env):
         while run:
             steps += 1
             reward, end_episode = self._update(act, param)
-            if steps == 199:  # add a limit for steps since 'obs_steps' is Discrete(200)
-                end_episode = True
+            # if steps == 150:  # add a limit for steps
+            #     end_episode = True
             run = not end_episode
             if run:
                 run = not self.player.can_kick(self.ball)
