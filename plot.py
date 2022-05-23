@@ -10,38 +10,25 @@ from stable_baselines3.common.monitor import get_monitor_files
 from stable_baselines3.common.monitor import LoadMonitorResultsError
 
 
-def plotter(algo: str = "ddpg",
-            env: str = "platform"):
-    sns.set()
-
-    # logs_dir = f"log/{algo}_stone/{env}"  # Make sure of using right path
-    logs_dir = f"log/{env}/{algo}_stone"
-    results, n_runs = load_results(logs_dir)  # load all log files to one DataFrame
-
-    # smooth the values
-    len_episodes = len(results) / n_runs
-    smoothed_values = np.array([])
-    window = 5000  # MP-DQN smooth the curve with 5000 episodes.
-    for run in range(n_runs):
-        loc_start = run * len_episodes
-        loc_end = loc_start + len_episodes - 1
-        values = results.loc[loc_start:loc_end, "r"].values
-        smoothed_values = np.append(smoothed_values, smooth(values, window))
-
-    # set x axis
-    episodes = list(np.arange(len_episodes)) * n_runs
+def plotter(env: str = "platform", window=2000):
+    log = f"log/{env}"
+    # logs_dir = f"log/{env}/{algo}_stone"
+    x_axis = "Episodes"
+    df = ts2xy(log, x=x_axis, window=window)
 
     # plot the curve
-    ax = sns.lineplot(x=episodes, y=smoothed_values, ci="sd")
-    plt.xlabel("Episodes")
+    sns.set()
+    ax = sns.lineplot(data=df, x="x", y="reward", hue="algo", ci="sd")
+    plt.xlabel(x_axis)
     plt.ylabel("Rewards")
+    plt.legend()  # no need to display legend title
     # plt.title("Platform")
     # ax.set_xlim(0, 80000)
     # ax.set_ylim(0, 1)
 
     # Don't put '/' after LOG_DIRECTORY to save in correct path.
-    plt.savefig(f"{logs_dir}.pdf")  # vector graph
-    plt.savefig(f"{logs_dir}.png", dpi=1000)  # bitmap
+    plt.savefig(f"{log}_{x_axis}.pdf")  # vector graph
+    plt.savefig(f"{log}_{x_axis}.png", dpi=1000)  # bitmap
     plt.show()
 
 
@@ -76,7 +63,9 @@ def load_results(path: str):
             n_runs += 1
 
     if len(monitor_files) == 0:
-        raise LoadMonitorResultsError(f"No monitor files of the form *monitor.csv found in {path}")
+        raise LoadMonitorResultsError(
+            f"No monitor files of the form *monitor.csv found in {path}"
+        )
     data_frames, headers = [], []
     for file_name in monitor_files:
         with open(file_name, "rt") as file_handler:
@@ -92,6 +81,64 @@ def load_results(path: str):
     data_frame.reset_index(inplace=True)
     data_frame["t"] -= min(header["t_start"] for header in headers)
     return data_frame, n_runs
+
+
+def ts2xy(log, x="Episodes", window=5000):
+    """Decompose the log data to x ans ys.
+
+    :param log: log directory
+    :param x: x_axis label, can be 'Timesteps', 'Episodes', 'Walltime_hrs'.
+    :param window: smooth window. MP-DQN smooth the curve with 5000 episodes.
+    """
+
+    logs_dir = [d for d in os.listdir(log)
+                if os.path.isdir(os.path.join(log, d))]
+
+    x_axis = None
+    y_smoothed = np.array([])
+    timesteps = np.array([])
+    episodes = np.array([])
+    walltime = np.array([])
+    algo_labels = np.array([])
+
+    for log_dir in logs_dir:
+        # load all log files to one DataFrame
+        results, n_runs = load_results(os.path.join(log, log_dir))
+
+        len_episodes = len(results) // n_runs
+
+        for run in range(n_runs):
+            loc_start = run * len_episodes
+            loc_end = loc_start + len_episodes - 1
+            values = results.loc[loc_start:loc_end, "r"].values
+
+            y_smoothed = np.append(y_smoothed, smooth(values, window))
+
+            timesteps = np.append(
+                timesteps,
+                np.cumsum(results.loc[loc_start:loc_end, "l"].values))
+            episodes = np.append(
+                episodes,
+                np.arange(len_episodes))
+            walltime = np.append(
+                walltime,
+                results.loc[loc_start:loc_end, "t"].values / 3600.0)
+
+            algo_labels = np.append(algo_labels, [f"{log_dir}"] * len_episodes)
+
+    if x == "Timesteps":
+        x_axis = timesteps
+    elif x == "Episodes":
+        x_axis = episodes
+    elif x == "Walltime_hrs":
+        x_axis = walltime
+    else:
+        raise NotImplementedError("Please give the correct x_axis label.")
+
+    df = pd.DataFrame({"x": x_axis,
+                       "reward": y_smoothed,
+                       "algo": algo_labels})
+    return df
 
 
 if __name__ == '__main__':
