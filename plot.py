@@ -17,7 +17,8 @@ def plotter(env: str = "platform", window=2000):
     df = ts2xy(log, x=x_axis, window=window)
 
     # plot the curve
-    sns.set()
+    plt.style.use("seaborn-whitegrid")  # useful in presentation
+    # plt.style.use("seaborn-paper")  # useful in paper
     ax = sns.lineplot(data=df, x="x", y="reward", hue="algo", ci="sd")
     plt.xlabel(x_axis)
     plt.ylabel("Rewards")
@@ -26,6 +27,7 @@ def plotter(env: str = "platform", window=2000):
     # ax.set_xlim(0, 80000)
     # ax.set_ylim(0, 1)
 
+    plt.tight_layout(pad=0.3)
     # Don't put '/' after LOG_DIRECTORY to save in correct path.
     plt.savefig(f"{log}_{x_axis}.pdf")  # vector graph
     plt.savefig(f"{log}_{x_axis}.png", dpi=1000)  # bitmap
@@ -94,7 +96,6 @@ def ts2xy(log, x="Episodes", window=5000):
     logs_dir = [d for d in os.listdir(log)
                 if os.path.isdir(os.path.join(log, d))]
 
-    x_axis = None
     y_smoothed = np.array([])
     timesteps = np.array([])
     episodes = np.array([])
