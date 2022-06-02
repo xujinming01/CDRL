@@ -1,5 +1,6 @@
 """Plot curves with baselines style.
 Origin code is https://github.com/openai/baselines/blob/master/baselines/common/plot_util.py.
+Mainly add some code on ``xy_fn`` to meet different x-axis.
 """
 import os
 import os.path as osp
@@ -120,10 +121,35 @@ def smooth(y, radius, mode='two_sided', valid_only=False):
     return out
 
 
-def default_xy_fn(r):
+def timesteps_xy_fn(r):
+    """x-axis is timesteps, y-axis is episode rewards."""
     x = np.cumsum(r.monitor.l)
     y = smooth(r.monitor.r, radius=10)
     return x, y
+
+
+def episodes_xy_fn(r):
+    """x-axis is episodes, y-axis is episode rewards."""
+    x = np.arange(len(r.monitor))
+    y = smooth(r.monitor.r, radius=10)
+    return x, y
+
+
+def walltime_xy_fn(r):
+    """x-axis is walltime by hours, y-axis is episodes rewards."""
+    x = r.monitor.t / 3600.0
+    y = smooth(r.monitor.r, radius=10)
+    return x, y
+
+
+def xy_fn_pick(x):
+    """pick a correct ``*_xy_fn()``"""
+    if x == "Episodes":
+        return episodes_xy_fn
+    elif x == "Timesteps":
+        return timesteps_xy_fn
+    elif x == "Walltime_hrs":
+        return walltime_xy_fn
 
 
 def default_split_fn(r):
@@ -268,7 +294,7 @@ COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
 
 def plot_results(
         allresults, *,
-        xy_fn=default_xy_fn,
+        xy_fn=episodes_xy_fn,
         split_fn=default_split_fn,
         group_fn=default_split_fn,
         average_group=True,
@@ -389,7 +415,6 @@ def plot_results(
                 l, = ax.plot(x, y, color=color)
                 g2l[group] = l
         if average_group:
-            global_high = 0
             for group in groups:
                 xys = gresults[group]
                 if not any(xys):
@@ -404,13 +429,11 @@ def plot_results(
                 if resample:
                     low = max(x[0] for x in origxs)
                     high = min(x[-1] for x in origxs)
-                    if not global_high or high < global_high:
-                        global_high = high
-                    usex = np.linspace(low, global_high, resample)
+                    usex = np.linspace(low, high, resample)
                     ys = []
                     for (x, y) in xys:
                         ys.append(
-                            symmetric_ema(x, y, low, global_high,
+                            symmetric_ema(x, y, low, high,
                                           resample, decay_steps=smooth_step)[1])
                 else:
                     assert allequal([x[:minxlen] for x in origxs]), \
@@ -454,19 +477,31 @@ def plot_results(
     return f, axarr
 
 
+def x_axis(x):
+    if x == "e" or x == "Episodes":
+        return "Episodes"
+    elif x == "t" or x == "Timesteps":
+        return "Timesteps"
+    elif x == "h" or x == "Walltime_hrs":
+        return "Walltime_hrs"
+
+
 if __name__ == '__main__':
-    env = "goal"
+    env = "hfo"
     log = f"log/{env}"
-    results = load_results("log/goal")
+    x_axis = x_axis("e")
+
+    results = load_results(log)
     plot_results(
         results,
+        xy_fn=xy_fn_pick(x_axis),
         split_fn=lambda _: "",
         shaded_err=False,
         # shaded_std=False,
         # resample=400,
         # smooth_step=1,
         group_fn=group_func,
-        xlabel="Episodes",
+        xlabel=x_axis,
         ylabel="Rewards",
     )
     # plt.savefig(f"{log}.pdf")  # vector graph
