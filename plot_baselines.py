@@ -200,15 +200,9 @@ def one_sided_ema(xolds, yolds, low=None, high=None, n=512, decay_steps=1.,
     low = xolds[0] if low is None else low
     high = xolds[-1] if high is None else high
 
-    assert xolds[
-               0] <= low, 'low = {} < xolds[0] = {} - extrapolation not permitted!'.format(
-        low, xolds[0])
-    assert xolds[
-               -1] >= high, 'high = {} > xolds[-1] = {}  - extrapolation not permitted!'.format(
-        high, xolds[-1])
-    assert len(xolds) == len(
-        yolds), 'length of xolds ({}) and yolds ({}) do not match!'.format(
-        len(xolds), len(yolds))
+    assert xolds[0] <= low, 'low = {} < xolds[0] = {} - extrapolation not permitted!'.format(low, xolds[0])
+    assert xolds[-1] >= high, 'high = {} > xolds[-1] = {}  - extrapolation not permitted!'.format(high, xolds[-1])
+    assert len(xolds) == len(yolds), 'length of xolds ({}) and yolds ({}) do not match!'.format(len(xolds), len(yolds))
 
     xolds = xolds.astype('float64')
     yolds = yolds.astype('float64')
@@ -489,21 +483,21 @@ def x_axis(x):
 if __name__ == '__main__':
     env = "hfo"
     log = f"log/{env}"
-    x_axis = x_axis("e")
+    x_ax = x_axis("e")
 
     results = load_results(log)
     plot_results(
         results,
-        xy_fn=xy_fn_pick(x_axis),
+        xy_fn=xy_fn_pick(x_ax),
         split_fn=lambda _: "",
         shaded_err=False,
         # shaded_std=False,
         # resample=400,
         # smooth_step=1,
         group_fn=group_func,
-        xlabel=x_axis,
+        xlabel=x_ax,
         ylabel="Rewards",
     )
-    # plt.savefig(f"{log}.pdf")  # vector graph
-    # plt.savefig(f"{log}.png", dpi=1000)  # bitmap
+    # plt.savefig(f"{log}_{x_ax}.pdf")  # vector graph
+    # plt.savefig(f"{log}_{x_ax}.png", dpi=1000)  # bitmap
     plt.show()

@@ -12,19 +12,16 @@ from config import ALGORITHMS
 from config import ENVIRONMENTS
 
 
-def run_stone(
+def run(
         algo: str = "ddpg",
         env: str = "platform",
         n_runs: int = 5,
         max_timesteps: int = 2_000_000,
-        max_episodes: int = 80_000,
-        n_eval_episodes: int = 100,
-        eval_freq: int = 20_000,
+        max_episodes: int = 40_000,
 ):
     # make sure the path is correct
     logs_dir = f"log/{env}/{algo}_stone"
 
-    # kill_soccer_server()
     env_v0 = ENVIRONMENTS[env]
     algo = ALGORITHMS[algo]
 
@@ -37,8 +34,8 @@ def run_stone(
         model = algo(env, max_timesteps, max_episodes)
 
         model.learn(log_dir)
+        env.close()
 
 
 if __name__ == '__main__':
-    fire.Fire(run_stone)
-    # run_stone()
+    fire.Fire(run)

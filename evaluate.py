@@ -34,8 +34,8 @@ def evaluate(log_dir, algo, eval_env):
                                             n_eval_episodes=n_eval_episodes,
                                             deterministic=True)
                 # print(f"mean_reward = {mean:.3f} +/- {std:.3f}")
-                mean_reward_single.append(round(mean, 4))
-                std_single.append(round(std, 4))
+                mean_reward_single.append(mean)
+                std_single.append(std)
                 if mean > best_reward[0] or (
                         mean == best_reward[0] and std > best_reward[1]):
                     best_reward[0] = mean
@@ -44,7 +44,7 @@ def evaluate(log_dir, algo, eval_env):
                     print(f"the model path is: {root}/{file}")
 
     # TODO(Jinming): Rewrite redundant code below.
-    print(f"The average reward of {len(std_single)} models with evaluation for "
+    print(f"Average reward of {len(std_single)} models over "
           f"{n_eval_episodes} episodes is {np.mean(mean_reward_single):.3f} "
           f"+/- {np.std(std_single):.3f}")
     reward = pd.DataFrame({"mean": mean_reward_single,
